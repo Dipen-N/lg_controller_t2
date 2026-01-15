@@ -1,7 +1,30 @@
 import 'package:flutter/material.dart';
+import 'package:lg_controller_t2/connections/lg_service.dart';
 
-class HomePage extends StatelessWidget {
+class HomePage extends StatefulWidget {
   const HomePage({super.key});
+
+  @override
+  State<HomePage> createState() => _HomePageState();
+}
+
+class _HomePageState extends State<HomePage> {
+  bool isConnected = false;
+  late SSH ssh;
+
+  @override
+  void initState() {
+    super.initState();
+    ssh = SSH();
+    _connectToLG();
+  }
+
+  Future<void> _connectToLG() async {
+    bool? result = await ssh.connectToLG();
+    setState(() {
+      isConnected = result ?? false;
+    });
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -15,8 +38,8 @@ class HomePage extends StatelessWidget {
               const SizedBox(height: 5),
 
               ElevatedButton(
-                onPressed: () {
-                  debugPrint("LG LOGO SENT");
+                onPressed: () async {
+                  await ssh.execute();
                 },
                 child: const Text("SEND LG LOGO"),
               ),

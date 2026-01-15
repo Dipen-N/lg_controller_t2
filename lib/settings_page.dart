@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+import 'package:lg_controller_t2/connections/lg_service.dart';
 
 class SettingsPage extends StatefulWidget {
   const SettingsPage({super.key});
@@ -10,11 +12,58 @@ class SettingsPage extends StatefulWidget {
 class _SettingsPageState extends State<SettingsPage> {
   // These variables store user input
   String username = '';
-  bool isConnected = false;
   String ipAddress = '';
-  String port = '';
+  String port = '22';
   String password = '';
   String rigs = '';
+
+  bool isConnected = false;
+
+  late SSH ssh;
+
+  @override
+  void initState() {
+    super.initState();
+    ssh = SSH();
+    _loadSettings();
+    _connectToLG();
+  }
+
+  // _loadsettings code
+  Future<void> _loadSettings() async {
+    final prefs = await SharedPreferences.getInstance();
+
+    setState(() {
+      ipAddress = prefs.getString('ipAddress') ?? '';
+      port = prefs.getString('sshPort') ?? '22';
+      username = prefs.getString('username') ?? '';
+      password = prefs.getString('password') ?? '';
+      rigs = prefs.getString('numberOfRigs') ?? '3';
+    });
+  }
+
+  // _save settings code
+  Future<void> _saveSettings() async {
+    final prefs = await SharedPreferences.getInstance();
+
+    await prefs.setString('ipAddress', ipAddress);
+    await prefs.setString('Port', port);
+    await prefs.setString('username', username);
+    await prefs.setString('password', password);
+    await prefs.setString('rigs', rigs);
+  }
+
+  // CONNECT TO LG CODE
+
+  Future<void> _connectToLG() async {
+    await _saveSettings();
+
+    final bool result = await ssh.connectToLG() ?? false;
+
+    setState(() {
+      isConnected = result;
+    });
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -85,7 +134,7 @@ class _SettingsPageState extends State<SettingsPage> {
             const SizedBox(height: 12),
 
             ElevatedButton(
-              onPressed: () {
+              onPressed: () async {
                 if (username.isEmpty |
                     ipAddress.isEmpty |
                     port.isEmpty |
@@ -94,6 +143,10 @@ class _SettingsPageState extends State<SettingsPage> {
                   debugPrint("ENTER ALL THE DETAILS");
                   return;
                 }
+
+                await _saveSettings();
+                SSH ssh = SSH();
+                await ssh.connectToLG();
 
                 setState(() {
                   isConnected = true;
